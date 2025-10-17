@@ -1,0 +1,7 @@
+[project]
+name = "gitrag-service"
+version = "0.1.0"
+description = "GitRAG Service"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
