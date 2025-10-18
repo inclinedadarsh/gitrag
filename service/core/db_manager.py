@@ -196,9 +196,17 @@ class DatabaseManager:
             return None
 
         # Then get the summary
-        summary_stmt = select(Summary).where(
-            and_(Summary.id == mapping.summary_id, Summary.type == summary_type)
-        )
+        # For file summaries, type is usually None, so we need to handle that
+        if summary_type == "full":
+            # For full summaries, look for the file summary (type is None)
+            summary_stmt = select(Summary).where(
+                and_(Summary.id == mapping.summary_id, Summary.type.is_(None))
+            )
+        else:
+            # For compact summaries, also look for type None (file summaries)
+            summary_stmt = select(Summary).where(
+                and_(Summary.id == mapping.summary_id, Summary.type.is_(None))
+            )
         return self.session.exec(summary_stmt).first()
 
     def get_component_summary(self, component_name: str) -> Optional[Summary]:
