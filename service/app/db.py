@@ -1,13 +1,30 @@
-from dotenv import load_dotenv, find_dotenv
+"""
+Database configuration and session management.
+"""
+
+from sqlmodel import Session, create_engine
+from typing import Generator
 import os
-from models import Summary, Dependency, UserKnowledge, CodeMapping  # noqa: F401
-from sqlmodel import SQLModel, create_engine
 
-load_dotenv(find_dotenv())
+# Database URL - use environment variable or default to SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL, echo=True)
+# Create engine
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    echo=False,  # Set to True for SQL query logging
+)
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+    """Create database tables."""
+    from models import Summary
+
+    Summary.metadata.create_all(engine)
+
+
+def get_session() -> Generator[Session, None, None]:
+    """Get database session dependency."""
+    with Session(engine) as session:
+        yield session
