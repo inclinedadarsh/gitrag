@@ -1,5 +1,6 @@
 from dotenv import load_dotenv, find_dotenv
 import os
+from models import Summary, Dependency, UserKnowledge, CodeMapping  # noqa: F401
 from sqlmodel import SQLModel, create_engine
 
 load_dotenv(find_dotenv())
