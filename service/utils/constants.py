@@ -66,3 +66,79 @@ FILE_FULL_SUMMARY_PROMPT = (
     "Class Summaries: {class_summaries}\n\n"
     "Return valid Markdown starting with a level-1 heading that contains the filepath."
 )
+
+# Query classification patterns
+QUERY_PATTERNS = {
+    "overview": {
+        "patterns": [
+            r"what does.*project|repository|codebase.*do",
+            r"purpose of.*this",
+            r"overview of.*project",
+            r"explain the.*project",
+            r"describe this.*repository",
+            r"^(what|explain|describe|purpose).*\?$",
+        ],
+        "entry_point": "repository",
+        "retrieval": "top-down",
+    },
+    "component_specific": {
+        "patterns": [
+            r"how does\s+(\w+)\s+work",
+            r"what (?:is|does)\s+(?:the\s+)?(?:function|class|method)\s+(\w+)",
+            r"explain\s+(?:function|class|method)\s+(\w+)",
+            r"what\s+does\s+(\w+)\s+do",
+        ],
+        "entry_point": "component",
+        "retrieval": "focused",
+    },
+    "flow_tracing": {
+        "patterns": [
+            r"(?:trace|follow)\s+(?:the\s+)?(?:execution|flow)\s+(?:of\s+)?(\w+)",
+            r"what\s+happens\s+when\s+(\w+)",
+            r"trace\s+(?:the\s+)?(?:call\s+)?(?:chain|path|flow)",
+            r"(?:step|walk)\s+through\s+(\w+)",
+        ],
+        "entry_point": "dependency_graph",
+        "retrieval": "graph_traversal",
+    },
+    "location_finding": {
+        "patterns": [
+            r"where\s+(?:is|can\s+i\s+find)\s+(?:the\s+)?(\w+)",
+            r"which\s+file\s+(?:is\s+)?(\w+)\s+in",
+            r"find\s+(?:the\s+)?(?:code\s+)?(?:for\s+)?(\w+)",
+            r"locate\s+(\w+)",
+        ],
+        "entry_point": "search",
+        "retrieval": "keyword_match",
+    },
+}
+
+# Query classification prompt with examples
+QUERY_CLASSIFICATION_PROMPT = (
+    "Classify this user query about a codebase. Use the examples below to understand the patterns:\n\n"
+    "EXAMPLES:\n"
+    "1. Query: 'What does this project do?'\n"
+    "   → Type: overview, Target: null, Confidence: 0.95\n\n"
+    "2. Query: 'How does the login function work?'\n"
+    "   → Type: component_specific, Target: 'login', Confidence: 0.9\n\n"
+    "3. Query: 'Trace the execution flow of authenticate_user'\n"
+    "   → Type: flow_tracing, Target: 'authenticate_user', Confidence: 0.9\n\n"
+    "4. Query: 'Where is the User class defined?'\n"
+    "   → Type: location_finding, Target: 'User', Confidence: 0.9\n\n"
+    "5. Query: 'How does backpropagation work in this neural network?'\n"
+    "   → Type: component_specific, Target: 'backpropagation', Confidence: 0.85\n\n"
+    "6. Query: 'What happens when I call train()?'\n"
+    "   → Type: flow_tracing, Target: 'train', Confidence: 0.8\n\n"
+    "7. Query: 'How to setup the project locally?'\n"
+    "   → Type: overview, Target: null, Confidence: 0.9\n\n"
+    "8. Query: 'Explain the loss function'\n"
+    "   → Type: component_specific, Target: 'loss', Confidence: 0.9\n\n"
+    "CLASSIFICATION RULES:\n"
+    "- overview: High-level project understanding, setup instructions, general purpose\n"
+    "- component_specific: Specific functions, classes, methods, algorithms\n"
+    "- flow_tracing: Execution paths, call chains, what happens when X is called\n"
+    "- location_finding: Where to find specific code, file locations\n\n"
+    "Query to classify: {user_query}\n\n"
+    "Respond in JSON format:\n"
+    '{{"type": "overview|component_specific|flow_tracing|location_finding", "target": "component_name_or_null", "confidence": 0.0-1.0}}'
+)
