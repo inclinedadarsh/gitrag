@@ -455,20 +455,40 @@ class DatabaseManager:
         """
         Find a specific component by name.
 
-        Uses CodeMapping to find by actual code element name.
+        Uses multiple search strategies for better matching.
         """
-        # Search in CodeMapping by content_preview for exact name match
+        # Strategy 1: Search by target_id (exact match)
+        summary_stmt = select(Summary).where(Summary.target_id == name)
+        summary = self.session.exec(summary_stmt).first()
+        if summary:
+            return summary
+
+        # Strategy 2: Search by target_id (contains match)
+        summary_stmt = select(Summary).where(Summary.target_id.like(f"%{name}%"))
+        summary = self.session.exec(summary_stmt).first()
+        if summary:
+            return summary
+
+        # Strategy 3: Search in CodeMapping by content_preview
         mapping_stmt = select(CodeMapping).where(
             CodeMapping.content_preview.like(f"%{name}%")
         )
         mapping = self.session.exec(mapping_stmt).first()
+        if mapping:
+            summary_stmt = select(Summary).where(Summary.id == mapping.summary_id)
+            return self.session.exec(summary_stmt).first()
 
-        if not mapping:
-            return None
+        # Strategy 4: Search in summary text for function/class names
+        summary_stmt = (
+            select(Summary)
+            .where(Summary.text.like(f"%{name}%"))
+            .where(Summary.level.in_(["function", "class"]))
+        )
+        summary = self.session.exec(summary_stmt).first()
+        if summary:
+            return summary
 
-        # Get the summary
-        summary_stmt = select(Summary).where(Summary.id == mapping.summary_id)
-        return self.session.exec(summary_stmt).first()
+        return None
 
     # ========== UTILITY METHODS ==========
 
