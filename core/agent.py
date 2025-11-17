@@ -430,31 +430,58 @@ If you think we have enough context to answer, set action to "answer".
         summary_parts = []
 
         if context.get("repo_summary"):
-            summary_parts.append(f"Repository: {context['repo_summary'].text[:100]}...")
+            # Include full repository summary text, not truncated
+            summary_parts.append(f"Repository Summary:\n{context['repo_summary'].text}")
 
         if context.get("file_summaries"):
             summary_parts.append(
-                f"Files: {len(context['file_summaries'])} file summaries"
+                f"\nFile Summaries ({len(context['file_summaries'])} files):"
             )
+            # Include first few file summaries for context
+            for file_summary in context["file_summaries"][:5]:
+                summary_parts.append(
+                    f"  - {file_summary.target_id}: {file_summary.text[:150]}..."
+                )
+            if len(context["file_summaries"]) > 5:
+                summary_parts.append(
+                    f"  ... and {len(context['file_summaries']) - 5} more files"
+                )
 
         if context.get("component_summary"):
-            summary_parts.append(f"Component: {context['component_summary'].target_id}")
+            summary_parts.append(
+                f"\nComponent: {context['component_summary'].target_id}"
+            )
+            summary_parts.append(f"Summary: {context['component_summary'].text}")
 
         if context.get("search_results"):
             summary_parts.append(
-                f"Search results: {len(context['search_results'])} matches"
+                f"\nSearch Results ({len(context['search_results'])} matches):"
             )
+            for result in context["search_results"][:3]:
+                if isinstance(result, dict) and "summary" in result:
+                    summary_parts.append(
+                        f"  - {result['summary'].target_id}: {result['summary'].text[:150]}..."
+                    )
+                elif hasattr(result, "target_id"):
+                    summary_parts.append(
+                        f"  - {result.target_id}: {result.text[:150]}..."
+                    )
 
         if context.get("execution_path"):
             summary_parts.append(
-                f"Execution path: {len(context['execution_path'])} components"
+                f"\nExecution Path ({len(context['execution_path'])} components):"
             )
+            for item in context["execution_path"][:5]:
+                if isinstance(item, dict) and "summary" in item:
+                    summary_parts.append(f"  - {item['summary'].target_id}")
+                elif hasattr(item, "target_id"):
+                    summary_parts.append(f"  - {item.target_id}")
 
         if context.get("dependency_graph"):
-            summary_parts.append("Dependency graph available")
+            summary_parts.append("\nDependency graph available")
 
         if context.get("file_paths"):
-            summary_parts.append(f"File paths: {len(context['file_paths'])} files")
+            summary_parts.append(f"\nFile paths: {len(context['file_paths'])} files")
 
         return "\n".join(summary_parts) if summary_parts else "No context available"
 

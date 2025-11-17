@@ -1,3 +1,0 @@
-"""
-GitRAG FastAPI Application Package
-"""

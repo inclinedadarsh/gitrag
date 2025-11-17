@@ -42,13 +42,15 @@ class CodeUnderstandingPipeline:
         5. Insert all into database via db_manager
         6. Build dependency graph
         """
-        print("Initializing repository...")
+        print("📦 Step 1: Parsing repository...")
 
         # Parse repository
         parsed_repo = self.parser.parse_repository()
-        print(f"Parsed {len(parsed_repo['files'])} files")
+        total_files = len(parsed_repo["files"])
+        print(f"   ✅ Parsed {total_files} files")
 
         # Generate repository summary
+        print("\n📝 Step 2: Generating repository summary...")
         repo_summary = self.summarizer.generate_repository_summary(parsed_repo)
         repo_id = build_summary_id("repository", parsed_repo["repository"]["name"])
 
@@ -59,17 +61,21 @@ class CodeUnderstandingPipeline:
             token_count=len(repo_summary.split()),
             target_id=parsed_repo["repository"]["name"],
         )
-        print("Repository summary generated")
+        print("   ✅ Repository summary generated")
 
         # Process files
+        print(f"\n📄 Step 3: Processing {total_files} files...")
         files_processed = 0
         components_processed = 0
+        functions_processed = 0
+        classes_processed = 0
 
-        for file_meta in parsed_repo["files"]:
+        for file_idx, file_meta in enumerate(parsed_repo["files"], 1):
             filepath = file_meta["filepath"]
             file_id = extract_file_summary_id(filepath)
 
             # Generate file summary
+            print(f"   [{file_idx}/{total_files}] Processing file: {filepath}")
             file_summary = self.summarizer.generate_file_summary_compact(file_meta)
 
             self.db_manager.insert_summary(
@@ -92,8 +98,16 @@ class CodeUnderstandingPipeline:
             )
 
             # Process functions
-            for func in file_meta.get("functions", []):
-                func_id = extract_component_id_from_mapping(func["name"], "function")
+            functions = file_meta.get("functions", [])
+            if functions:
+                print(
+                    f"      → Generating summaries for {len(functions)} function(s)..."
+                )
+            for func in functions:
+                func_id = extract_component_id_from_mapping(
+                    func["name"], "function", filepath, func.get("line_start")
+                )
+                print(f"         • Function: {func['name']}")
                 func_summary = self.summarizer.generate_component_summary(
                     func, "function"
                 )
@@ -118,11 +132,18 @@ class CodeUnderstandingPipeline:
                         content_preview=func.get("signature", func["name"]),
                     )
 
+                functions_processed += 1
                 components_processed += 1
 
             # Process classes
-            for cls in file_meta.get("classes", []):
-                cls_id = extract_component_id_from_mapping(cls["name"], "class")
+            classes = file_meta.get("classes", [])
+            if classes:
+                print(f"      → Generating summaries for {len(classes)} class(es)...")
+            for cls in classes:
+                cls_id = extract_component_id_from_mapping(
+                    cls["name"], "class", filepath, cls.get("line_start")
+                )
+                print(f"         • Class: {cls['name']}")
                 cls_summary = self.summarizer.generate_component_summary(cls, "class")
 
                 self.db_manager.insert_summary(
@@ -145,11 +166,13 @@ class CodeUnderstandingPipeline:
                         content_preview=cls["name"],
                     )
 
+                classes_processed += 1
                 components_processed += 1
 
             files_processed += 1
 
         # Store dependencies
+        print("\n🔗 Step 4: Storing dependencies...")
         dependency_graph = parsed_repo.get("dependency_graph", {})
         dependencies_stored = 0
 
@@ -171,16 +194,15 @@ class CodeUnderstandingPipeline:
                 )
                 dependencies_stored += 1
 
-        print("Initialization complete:")
-        print(f"  - Files processed: {files_processed}")
-        print(f"  - Components processed: {components_processed}")
-        print(f"  - Dependencies stored: {dependencies_stored}")
+        print(f"   ✅ Stored {dependencies_stored} dependencies")
 
         return {
             "files_processed": files_processed,
             "components_processed": components_processed,
             "dependencies_stored": dependencies_stored,
             "repository_name": parsed_repo["repository"]["name"],
+            "functions_processed": functions_processed,
+            "classes_processed": classes_processed,
         }
 
     def answer_user_query(self, query: str, user_id: str = "default") -> Dict[str, Any]:

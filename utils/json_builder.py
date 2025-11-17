@@ -109,11 +109,18 @@ def extract_file_summary_id(filepath: str) -> str:
     return f"file_{normalized}"
 
 
-def extract_component_id_from_mapping(component_name: str, element_type: str) -> str:
+def extract_component_id_from_mapping(
+    component_name: str,
+    element_type: str,
+    filepath: Optional[str] = None,
+    line_start: Optional[int] = None,
+) -> str:
     """
-    Create component ID from name and type.
+    Create component ID from name and type, optionally including filepath for uniqueness.
 
     "authenticate_user" + "function" → "func_authenticate_user"
+    "authenticate_user" + "function" + "auth/login.py" → "func_authenticate_user_auth_login_py"
+    "loss" + "function" + "inclinet/loss.py" + 10 → "func_loss_inclinet_loss_py_10"
     "AuthManager" + "class" → "class_AuthManager"
     """
     # Normalize component name
@@ -133,7 +140,23 @@ def extract_component_id_from_mapping(component_name: str, element_type: str) ->
     }
 
     prefix = type_prefix_map.get(element_type, element_type)
-    return f"{prefix}_{normalized_name}"
+    base_id = f"{prefix}_{normalized_name}"
+
+    # Add filepath to make ID unique if provided (handles duplicate names in same file)
+    if filepath:
+        # Normalize filepath similar to extract_file_summary_id
+        clean_path = filepath.lstrip("/")
+        normalized_path = re.sub(r"[/\\]", "_", clean_path)
+        normalized_path = re.sub(r"\.", "_", normalized_path)
+        normalized_path = re.sub(r"_+", "_", normalized_path)
+        normalized_path = normalized_path.strip("_")
+        base_id = f"{base_id}_{normalized_path}"
+
+    # Add line number if provided (for extra uniqueness if same name in same file)
+    if line_start is not None:
+        base_id = f"{base_id}_{line_start}"
+
+    return base_id
 
 
 def build_dependency_relationship(
@@ -344,7 +367,9 @@ def build_hierarchical_summary_structure(
 
         # Add functions
         for func in file_meta.get("functions", []):
-            func_id = extract_component_id_from_mapping(func["name"], "function")
+            func_id = extract_component_id_from_mapping(
+                func["name"], "function", filepath, func.get("line_start")
+            )
             file_structure["functions"].append(
                 {
                     "name": func["name"],
@@ -357,7 +382,9 @@ def build_hierarchical_summary_structure(
 
         # Add classes
         for cls in file_meta.get("classes", []):
-            cls_id = extract_component_id_from_mapping(cls["name"], "class")
+            cls_id = extract_component_id_from_mapping(
+                cls["name"], "class", filepath, cls.get("line_start")
+            )
             file_structure["classes"].append(
                 {
                     "name": cls["name"],

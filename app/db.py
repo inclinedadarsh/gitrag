@@ -3,7 +3,6 @@ Database configuration and session management.
 """
 
 from sqlmodel import Session, create_engine
-from typing import Generator
 import os
 
 # Database URL - use environment variable or default to SQLite
@@ -24,7 +23,6 @@ def create_db_and_tables():
     Summary.metadata.create_all(engine)
 
 
-def get_session() -> Generator[Session, None, None]:
-    """Get database session dependency."""
-    with Session(engine) as session:
-        yield session
+def get_session() -> Session:
+    """Get database session for terminal use."""
+    return Session(engine)
