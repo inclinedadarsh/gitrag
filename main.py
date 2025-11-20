@@ -9,7 +9,7 @@ import sys
 from typing import Optional
 from openai import OpenAI
 from dotenv import load_dotenv
-from app.db import create_db_and_tables, get_session
+from core.db import create_db_and_tables, get_session
 from core import CodeUnderstandingPipeline
 
 # Load environment variables from .env file if it exists
