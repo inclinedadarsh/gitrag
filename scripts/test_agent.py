@@ -26,9 +26,9 @@ def test_agent():
     mode = os.getenv("MODE", "production")
     logger = TUILogger(mode=mode)
     logger.show_logo()
-    logger.rule("Testing LLMAgent", icon="🧪")
+    logger.rule("Testing LLMAgent", icon="[TEST]")
 
-    logger.info("1. Setting up database...", icon="🗄️")
+    logger.info("1. Setting up database...", icon="[DB]")
     try:
         create_db_and_tables()
         session = get_session()
@@ -38,7 +38,7 @@ def test_agent():
         logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    logger.info("2. Initializing LLMAgent...", icon="🤖")
+    logger.info("2. Initializing LLMAgent...", icon="[LLM]")
     try:
         llm_client = get_llm_client()
         agent = LLMAgent(llm_client, db_manager, max_iterations=3, logger=logger)
@@ -48,10 +48,10 @@ def test_agent():
         logger.error(f"Failed to initialize: {e}", indent=1)
         return
 
-    logger.rule("3. Testing tool execution", icon="🧰")
+    logger.rule("3. Testing tool execution", icon="[TOOLS]")
 
     # Test search_components tool
-    logger.info("Test 1: search_components tool", icon="🔍", indent=1)
+    logger.info("Test 1: search_components tool", icon="[SEARCH]", indent=1)
     try:
         result = agent.execute_tool(
             "search_components", {"keyword": "test", "limit": 5}
@@ -68,7 +68,7 @@ def test_agent():
         logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test get_dependency_graph tool
-    logger.info("Test 2: get_dependency_graph tool", icon="🔗", indent=1)
+    logger.info("Test 2: get_dependency_graph tool", icon="[LINK]", indent=1)
     try:
         result = agent.execute_tool("get_dependency_graph", {})
         if result.get("error"):
@@ -80,7 +80,7 @@ def test_agent():
     except Exception as e:
         logger.warning(f"Error: {e}", indent=2)
 
-    logger.rule("4. Testing decision making", icon="🧠")
+    logger.rule("4. Testing decision making", icon="[MIND]")
 
     test_query = "What does this project do?"
     initial_context = {
@@ -90,7 +90,7 @@ def test_agent():
     }
     user_knowledge = {"expertise_level": "intermediate", "concepts_learned": []}
 
-    logger.info(f"Query: {test_query}", icon="💬", indent=1)
+    logger.info(f"Query: {test_query}", icon="[ASK]", indent=1)
     try:
         decision = agent.decide_next_action(
             test_query, initial_context, user_knowledge, 0
@@ -109,7 +109,7 @@ def test_agent():
 
     logger.rule(
         "5. Testing full query answering (requires initialized repository)",
-        icon="ℹ️",
+        icon="[INFO]",
     )
     logger.warning(
         "This test requires a repository to be initialized first.",
@@ -120,9 +120,9 @@ def test_agent():
         indent=1,
     )
 
-    logger.success("LLMAgent test completed!", icon="✅")
+    logger.success("LLMAgent test completed!", icon="[OK]")
     logger.warning(
-        "Some tests may warn if the database is empty — initialize a repository for full coverage.",
+        "Some tests may warn if the database is empty -- initialize a repository for full coverage.",
         indent=0,
     )
 

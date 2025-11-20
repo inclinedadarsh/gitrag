@@ -29,27 +29,27 @@ def test_summarizer():
     try:
         llm_client = get_llm_client()
         summarizer = SummaryGenerator(llm_client)
-        print("   ✅ SummaryGenerator initialized")
+        print("   [OK] SummaryGenerator initialized")
     except Exception as e:
-        print(f"   ❌ Failed to initialize: {e}")
+        print(f"   [ERR] Failed to initialize: {e}")
         return
 
     print("\n2. Parsing a small repository for test data...")
     try:
         parser = CodeParser("https://github.com/inclinedadarsh/inclinet")
         parsed_repo = parser.parse_repository()
-        print(f"   ✅ Repository parsed: {len(parsed_repo['files'])} files")
+        print(f"   [OK] Repository parsed: {len(parsed_repo['files'])} files")
     except Exception as e:
-        print(f"   ❌ Failed to parse repository: {e}")
+        print(f"   [ERR] Failed to parse repository: {e}")
         return
 
     print("\n3. Testing repository summary generation...")
     try:
         repo_summary = summarizer.generate_repository_summary(parsed_repo)
-        print("   ✅ Repository summary generated")
-        print(f"   📝 Summary (first 200 chars): {repo_summary[:200]}...")
+        print("   [OK] Repository summary generated")
+        print(f"   [NOTE] Summary (first 200 chars): {repo_summary[:200]}...")
     except Exception as e:
-        print(f"   ❌ Failed to generate repository summary: {e}")
+        print(f"   [ERR] Failed to generate repository summary: {e}")
         import traceback
 
         traceback.print_exc()
@@ -61,16 +61,16 @@ def test_summarizer():
         try:
             sample_file = python_files[0]
             file_summary = summarizer.generate_file_summary_compact(sample_file)
-            print("   ✅ File summary generated")
-            print(f"   📄 File: {sample_file['filepath']}")
-            print(f"   📝 Summary: {file_summary}")
+            print("   [OK] File summary generated")
+            print(f"   [FILE] File: {sample_file['filepath']}")
+            print(f"   [NOTE] Summary: {file_summary}")
         except Exception as e:
-            print(f"   ❌ Failed to generate file summary: {e}")
+            print(f"   [ERR] Failed to generate file summary: {e}")
             import traceback
 
             traceback.print_exc()
     else:
-        print("   ⚠️  No Python files found to test")
+        print("   [WARN]  No Python files found to test")
 
     print("\n5. Testing component summary generation...")
     if python_files:
@@ -82,20 +82,20 @@ def test_summarizer():
                 func_summary = summarizer.generate_component_summary(
                     sample_func, "function"
                 )
-                print("   ✅ Component summary generated")
-                print(f"   🔧 Function: {sample_func.get('name')}")
-                print(f"   📝 Summary: {func_summary}")
+                print("   [OK] Component summary generated")
+                print(f"   [TOOL] Function: {sample_func.get('name')}")
+                print(f"   [NOTE] Summary: {func_summary}")
             except Exception as e:
-                print(f"   ❌ Failed to generate component summary: {e}")
+                print(f"   [ERR] Failed to generate component summary: {e}")
                 import traceback
 
                 traceback.print_exc()
         else:
-            print("   ⚠️  No functions found to test")
+            print("   [WARN]  No functions found to test")
     else:
-        print("   ⚠️  No Python files found to test")
+        print("   [WARN]  No Python files found to test")
 
-    print("\n✅ SummaryGenerator test completed successfully!")
+    print("\n[OK] SummaryGenerator test completed successfully!")
     print("=" * 70)
 
 

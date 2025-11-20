@@ -14,16 +14,16 @@ def build_summary_id(
 
     Examples:
         build_summary_id("repository", "my-project")
-        → "repo_my-project"
+        -> "repo_my-project"
 
         build_summary_id("file", "auth/login.py")
-        → "file_auth_login_py"
+        -> "file_auth_login_py"
 
         build_summary_id("function", "authenticate_user")
-        → "func_authenticate_user"
+        -> "func_authenticate_user"
 
         build_summary_id("file", "auth/login.py", "compact")
-        → "file_auth_login_py_compact"
+        -> "file_auth_login_py_compact"
     """
     # Normalize target_name by replacing special characters with underscores
     normalized_name = re.sub(r"[^\w\-]", "_", target_name)
@@ -94,8 +94,8 @@ def extract_file_summary_id(filepath: str) -> str:
     """
     Convert filepath to file summary ID.
 
-    "auth/login.py" → "file_auth_login"
-    "docs/README.md" → "file_docs_README"
+    "auth/login.py" -> "file_auth_login"
+    "docs/README.md" -> "file_docs_README"
     """
     # Remove leading slash if present
     clean_path = filepath.lstrip("/")
@@ -118,10 +118,10 @@ def extract_component_id_from_mapping(
     """
     Create component ID from name and type, optionally including filepath for uniqueness.
 
-    "authenticate_user" + "function" → "func_authenticate_user"
-    "authenticate_user" + "function" + "auth/login.py" → "func_authenticate_user_auth_login_py"
-    "loss" + "function" + "inclinet/loss.py" + 10 → "func_loss_inclinet_loss_py_10"
-    "AuthManager" + "class" → "class_AuthManager"
+    "authenticate_user" + "function" -> "func_authenticate_user"
+    "authenticate_user" + "function" + "auth/login.py" -> "func_authenticate_user_auth_login_py"
+    "loss" + "function" + "inclinet/loss.py" + 10 -> "func_loss_inclinet_loss_py_10"
+    "AuthManager" + "class" -> "class_AuthManager"
     """
     # Normalize component name
     normalized_name = re.sub(r"[^\w\-]", "_", component_name)
@@ -296,8 +296,8 @@ def extract_module_name_from_filepath(filepath: str) -> str:
     """
     Extract module name from filepath for import resolution.
 
-    "inclinet/neural_network.py" → "inclinet.neural_network"
-    "examples/fizzbuzz.py" → "examples.fizzbuzz"
+    "inclinet/neural_network.py" -> "inclinet.neural_network"
+    "examples/fizzbuzz.py" -> "examples.fizzbuzz"
     """
     # Normalize the filepath
     normalized = normalize_filepath(filepath)

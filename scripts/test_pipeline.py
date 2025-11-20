@@ -26,9 +26,9 @@ def test_pipeline():
     mode = os.getenv("MODE", "production")
     logger = TUILogger(mode=mode)
     logger.show_logo()
-    logger.rule("Testing CodeUnderstandingPipeline", icon="🧪")
+    logger.rule("Testing CodeUnderstandingPipeline", icon="[TEST]")
 
-    logger.info("1. Setting up database...", icon="🗄️")
+    logger.info("1. Setting up database...", icon="[DB]")
     try:
         create_db_and_tables()
         session = get_session()
@@ -37,7 +37,7 @@ def test_pipeline():
         logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    logger.info("2. Initializing LLM client...", icon="🤖")
+    logger.info("2. Initializing LLM client...", icon="[LLM]")
     try:
         llm_client = get_llm_client()
         logger.success("LLM client initialized", indent=1)
@@ -45,7 +45,7 @@ def test_pipeline():
         logger.error(f"LLM client initialization failed: {e}", indent=1)
         return
 
-    logger.info("3. Initializing pipeline...", icon="⚙️")
+    logger.info("3. Initializing pipeline...", icon="[CFG]")
     repo_url = "https://github.com/inclinedadarsh/inclinet"
     logger.bullet(f"Repository: {repo_url}", indent=1)
 
@@ -61,7 +61,7 @@ def test_pipeline():
         logger.error(f"Pipeline initialization failed: {e}", indent=1)
         return
 
-    logger.rule("4. Testing repository initialization...", icon="📦")
+    logger.rule("4. Testing repository initialization...", icon="[PKG]")
     logger.warning(
         "This may take several minutes depending on repository size...",
         indent=1,
@@ -90,7 +90,7 @@ def test_pipeline():
         traceback.print_exc()
         return
 
-    logger.rule("5. Testing query answering...", icon="💬")
+    logger.rule("5. Testing query answering...", icon="[ASK]")
 
     test_queries = [
         "What does this project do?",
@@ -99,7 +99,7 @@ def test_pipeline():
     ]
 
     for i, query in enumerate(test_queries, 1):
-        logger.info(f"Query {i}: {query}", icon="❓", indent=1)
+        logger.info(f"Query {i}: {query}", icon="[Q]", indent=1)
 
         start_time = time.time()
         try:
@@ -134,7 +134,7 @@ def test_pipeline():
 
             traceback.print_exc()
 
-    logger.info("6. Testing pipeline statistics...", icon="📊")
+    logger.info("6. Testing pipeline statistics...", icon="[STATS]")
     try:
         stats = pipeline.get_pipeline_stats()
         logger.success("Pipeline stats retrieved", indent=1)
@@ -143,7 +143,9 @@ def test_pipeline():
     except Exception as e:
         logger.error(f"Failed to get stats: {e}", indent=1)
 
-    logger.success("CodeUnderstandingPipeline test completed successfully!", icon="✅")
+    logger.success(
+        "CodeUnderstandingPipeline test completed successfully!", icon="[OK]"
+    )
 
 
 if __name__ == "__main__":

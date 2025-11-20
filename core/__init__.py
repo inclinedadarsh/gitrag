@@ -50,7 +50,7 @@ class CodeUnderstandingPipeline:
         5. Insert all into database via db_manager
         6. Build dependency graph
         """
-        self.logger.info("Step 1: Parsing repository...", icon="📦")
+        self.logger.info("Step 1: Parsing repository...", icon="[PARSE]")
 
         # Parse repository
         parsed_repo = self.parser.parse_repository()
@@ -58,7 +58,7 @@ class CodeUnderstandingPipeline:
         self.logger.success(f"Parsed {total_files} files", indent=1)
 
         # Generate repository summary
-        self.logger.info("Step 2: Generating repository summary...", icon="📝")
+        self.logger.info("Step 2: Generating repository summary...", icon="[SUMMARY]")
         repo_summary = self.summarizer.generate_repository_summary(parsed_repo)
         repo_id = build_summary_id("repository", parsed_repo["repository"]["name"])
 
@@ -72,21 +72,33 @@ class CodeUnderstandingPipeline:
         self.logger.success("Repository summary generated", indent=1)
 
         # Process files
-        self.logger.info(f"Step 3: Processing {total_files} files...", icon="📄")
+        self.logger.info(f"Step 3: Processing {total_files} files...", icon="[FILES]")
         files_processed = 0
         components_processed = 0
         functions_processed = 0
         classes_processed = 0
+
+        def should_report_file(idx: int) -> bool:
+            if self.logger.is_dev:
+                return True
+            if total_files <= 25:
+                return True
+            interval = max(1, total_files // 10)
+            return idx == 1 or idx == total_files or idx % interval == 0
+
+        def shorten_path(path: str, limit: int = 60) -> str:
+            return path if len(path) <= limit else f"...{path[-(limit - 3) :]}"
 
         for file_idx, file_meta in enumerate(parsed_repo["files"], 1):
             filepath = file_meta["filepath"]
             file_id = extract_file_summary_id(filepath)
 
             # Generate file summary
-            if self.logger.is_dev:
+            if should_report_file(file_idx):
                 self.logger.bullet(
-                    f"[{file_idx}/{total_files}] Processing file: {filepath}",
+                    f"[{file_idx}/{total_files}] Processing file: {shorten_path(filepath)}",
                     indent=1,
+                    icon="[FILE]",
                 )
             file_summary = self.summarizer.generate_file_summary_compact(file_meta)
 
@@ -115,7 +127,7 @@ class CodeUnderstandingPipeline:
                 self.logger.bullet(
                     f"Generating {len(functions)} function summaries",
                     indent=2,
-                    icon="ƒ",
+                    icon="[FUNC]",
                 )
             for func in functions:
                 func_id = extract_component_id_from_mapping(
@@ -156,7 +168,7 @@ class CodeUnderstandingPipeline:
                 self.logger.bullet(
                     f"Generating {len(classes)} class summaries",
                     indent=2,
-                    icon="🏛️",
+                    icon="[CLASS]",
                 )
             for cls in classes:
                 cls_id = extract_component_id_from_mapping(
@@ -192,7 +204,7 @@ class CodeUnderstandingPipeline:
             files_processed += 1
 
         # Store dependencies
-        self.logger.info("Step 4: Storing dependencies...", icon="🔗")
+        self.logger.info("Step 4: Storing dependencies...", icon="[LINKS]")
         dependency_graph = parsed_repo.get("dependency_graph", {})
         dependencies_stored = 0
 
@@ -237,10 +249,10 @@ class CodeUnderstandingPipeline:
         5. Update user_knowledge with learned concepts
         6. Return response
         """
-        self.logger.info(f"Processing query: '{query}'", icon="🔍")
+        self.logger.info(f"Processing query: '{query}'", icon="[QUERY]")
 
         # Classify query
-        self.logger.bullet("Step 1: Classifying query...", indent=1, icon="🎯")
+        self.logger.bullet("Step 1: Classifying query...", indent=1, icon="[STEP1]")
         classification = self.classifier.classify_query(query)
         self.logger.bullet(
             f"Type: {classification['type']} (confidence: {classification['confidence']:.2f})",
@@ -252,10 +264,12 @@ class CodeUnderstandingPipeline:
             self.logger.dev("Classification Payload", classification)
 
         # Retrieve initial context
-        self.logger.bullet("Step 2: Retrieving initial context...", indent=1, icon="📚")
+        self.logger.bullet(
+            "Step 2: Retrieving initial context...", indent=1, icon="[CTX]"
+        )
         initial_context = self.retrieval.retrieve_context(classification)
         self.logger.bullet(
-            f"Context type: {initial_context.get('entry_point', '—')}", indent=2
+            f"Context type: {initial_context.get('entry_point', '--')}", indent=2
         )
         self.logger.bullet(
             f"Token count: {initial_context.get('token_count', 0)}", indent=2
@@ -274,7 +288,7 @@ class CodeUnderstandingPipeline:
             self.logger.dev("Context Snapshot", context_snapshot)
 
         # Get user knowledge (simplified for now)
-        self.logger.bullet("Step 3: Loading user knowledge...", indent=1, icon="👤")
+        self.logger.bullet("Step 3: Loading user knowledge...", indent=1, icon="[USER]")
         user_knowledge = {"expertise_level": "intermediate", "concepts_learned": []}
         self.logger.bullet(
             f"Expertise level: {user_knowledge['expertise_level']}", indent=2
@@ -282,11 +296,11 @@ class CodeUnderstandingPipeline:
 
         # Answer query using agent
         self.logger.bullet(
-            "Step 4: Agent reasoning and tool execution...", indent=1, icon="🤖"
+            "Step 4: Agent reasoning and tool execution...", indent=1, icon="[AGENT]"
         )
         response = self.agent.answer_query(query, initial_context, user_knowledge)
         self.logger.bullet(
-            f"Tools used: {', '.join(response['tools_used']) if response['tools_used'] else '—'}",
+            f"Tools used: {', '.join(response['tools_used']) if response['tools_used'] else '--'}",
             indent=2,
         )
         self.logger.bullet(f"Sources gathered: {len(response['sources'])}", indent=2)
@@ -297,7 +311,7 @@ class CodeUnderstandingPipeline:
                 f"New concepts learned: {response['new_concepts_learned']}", indent=2
             )
 
-        self.logger.success("Query processing complete!", icon="✅", indent=1)
+        self.logger.success("Query processing complete!", icon="[DONE]", indent=1)
 
         return {
             "query": query,

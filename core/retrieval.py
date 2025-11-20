@@ -201,7 +201,7 @@ class RetrievalEngine:
                 {"summary": Summary, "depth": 1},
                 ...
             ],
-            "call_chain": "func_login → authenticate_user → check_password",
+            "call_chain": "func_login -> authenticate_user -> check_password",
             "token_count": 3000
         }
         """
@@ -247,7 +247,7 @@ class RetrievalEngine:
             current_depth += 1
 
         # Build call chain representation
-        call_chain = " → ".join([s["summary"].target_id for s in path_with_depth])
+        call_chain = " -> ".join([s["summary"].target_id for s in path_with_depth])
 
         # Calculate token count
         token_count = sum(s["summary"].token_count for s in path_with_depth)

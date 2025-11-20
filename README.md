@@ -4,11 +4,11 @@ GitRAG is an AI-powered code understanding and question answering system. It ana
 
 ## Features
 
-- 🔍 **Repository Analysis**: Automatically parses and analyzes Python and Markdown files
-- 📚 **Intelligent Summarization**: Generates hierarchical summaries at repository, file, and component levels
-- 🤖 **AI-Powered Q&A**: Ask questions about the codebase and get detailed answers
-- 🔗 **Dependency Tracking**: Understand relationships between components
-- 🧠 **Context-Aware**: Uses reasoning agents to navigate code context
+- [SEARCH] **Repository Analysis**: Automatically parses and analyzes Python and Markdown files
+- [DOCS] **Intelligent Summarization**: Generates hierarchical summaries at repository, file, and component levels
+- [LLM] **AI-Powered Q&A**: Ask questions about the codebase and get detailed answers
+- [LINK] **Dependency Tracking**: Understand relationships between components
+- [MIND] **Context-Aware**: Uses reasoning agents to navigate code context
 
 ## Installation
 
@@ -81,16 +81,16 @@ $ python main.py
 
 Enter repository URL: https://github.com/username/repo
 
-🔄 Initializing repository...
-✅ Repository initialized successfully!
+[LOOP] Initializing repository...
+[OK] Repository initialized successfully!
   - Files processed: 45
   - Components processed: 120
   - Dependencies stored: 89
 
-💬 Ask a question: What does this project do?
+[ASK] Ask a question: What does this project do?
 
-🔍 Processing Query...
-💬 Answer: This project is a neural network library that provides...
+[SEARCH] Processing Query...
+[ASK] Answer: This project is a neural network library that provides...
 ```
 
 ## Testing
@@ -160,33 +160,33 @@ The system uses `x-ai/grok-code-fast-1` by default. This can be changed in `util
 
 ```
 gitrag/
-├── main.py                 # Terminal application entry point
-├── core/                   # Core functionality modules
-│   ├── agent.py           # LLM reasoning agent
-│   ├── classifier.py     # Query classification
-│   ├── db_manager.py      # Database operations
-│   ├── parser.py          # Code parsing
-│   ├── retrieval.py       # Context retrieval
-│   ├── summarizer.py      # Summary generation
-│   └── __init__.py        # Pipeline orchestrator
-├── models/                 # Database models
-│   ├── summary.py
-│   ├── dependency.py
-│   └── user.py
-├── app/                    # Application utilities
-│   └── db.py              # Database setup
-├── utils/                  # Utility functions
-│   ├── constants.py       # Constants and prompts
-│   ├── json_builder.py    # ID generation utilities
-│   └── ast_utils.py       # AST utilities
-└── scripts/                # Test scripts
-    ├── test_parser.py
-    ├── test_summarizer.py
-    ├── test_classifier.py
-    ├── test_retrieval.py
-    ├── test_agent.py
-    ├── test_db_manager.py
-    └── test_pipeline.py
+|-- main.py                 # Terminal application entry point
+|-- core/                   # Core functionality modules
+|   |-- agent.py            # LLM reasoning agent
+|   |-- classifier.py       # Query classification
+|   |-- db_manager.py       # Database operations
+|   |-- parser.py           # Code parsing
+|   |-- retrieval.py        # Context retrieval
+|   |-- summarizer.py       # Summary generation
+|   `-- __init__.py         # Pipeline orchestrator
+|-- models/                 # Database models
+|   |-- summary.py
+|   |-- dependency.py
+|   `-- user.py
+|-- app/                    # Application utilities
+|   `-- db.py               # Database setup
+|-- utils/                  # Utility functions
+|   |-- constants.py        # Constants and prompts
+|   |-- json_builder.py     # ID generation utilities
+|   `-- ast_utils.py        # AST utilities
+`-- scripts/                # Test scripts
+    |-- test_parser.py
+    |-- test_summarizer.py
+    |-- test_classifier.py
+    |-- test_retrieval.py
+    |-- test_agent.py
+    |-- test_db_manager.py
+    `-- test_pipeline.py
 ```
 
 ## How It Works

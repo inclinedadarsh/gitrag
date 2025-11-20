@@ -319,7 +319,7 @@ class DatabaseManager:
 
         Example:
             get_dependencies_of_component("func_authenticate_user", "calls")
-            → [Summary(id="func_check_password"), Summary(id="func_query_db")]
+            -> [Summary(id="func_check_password"), Summary(id="func_query_db")]
 
         Process:
         1. Query: SELECT target_id FROM Dependency
@@ -394,7 +394,7 @@ class DatabaseManager:
 
         Returns:
         List of components in execution order:
-        [func_login_endpoint → authenticate_user → check_password_hash → ...]
+        [func_login_endpoint -> authenticate_user -> check_password_hash -> ...]
 
         Process:
         1. Start with start_component_id

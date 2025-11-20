@@ -26,9 +26,9 @@ def test_retrieval():
     mode = os.getenv("MODE", "production")
     logger = TUILogger(mode=mode)
     logger.show_logo()
-    logger.rule("Testing RetrievalEngine", icon="🧪")
+    logger.rule("Testing RetrievalEngine", icon="[TEST]")
 
-    logger.info("1. Setting up database...", icon="🗄️")
+    logger.info("1. Setting up database...", icon="[DB]")
     try:
         create_db_and_tables()
         session = get_session()
@@ -38,7 +38,7 @@ def test_retrieval():
         logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    logger.info("2. Initializing RetrievalEngine...", icon="⚙️")
+    logger.info("2. Initializing RetrievalEngine...", icon="[CFG]")
     try:
         retrieval = RetrievalEngine(db_manager)
         logger.success("RetrievalEngine initialized", indent=1)
@@ -46,10 +46,10 @@ def test_retrieval():
         logger.error(f"Failed to initialize: {e}", indent=1)
         return
 
-    logger.rule("3. Testing retrieval strategies", icon="🧪")
+    logger.rule("3. Testing retrieval strategies", icon="[TEST]")
 
     # Test repository overview retrieval
-    logger.info("Test 1: Repository overview retrieval", icon="📦", indent=1)
+    logger.info("Test 1: Repository overview retrieval", icon="[PKG]", indent=1)
     try:
         context = retrieval.retrieve_repository_overview()
         logger.success("Context retrieved", indent=2)
@@ -69,7 +69,7 @@ def test_retrieval():
         traceback.print_exc()
 
     # Test component context retrieval
-    logger.info("Test 2: Component context retrieval", icon="🧩", indent=1)
+    logger.info("Test 2: Component context retrieval", icon="[PART]", indent=1)
     try:
         # This will fail if no components exist, which is expected
         context = retrieval.retrieve_component_context("test_component")
@@ -86,7 +86,7 @@ def test_retrieval():
         logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test search retrieval
-    logger.info("Test 3: Search retrieval", icon="🔍", indent=1)
+    logger.info("Test 3: Search retrieval", icon="[SEARCH]", indent=1)
     try:
         context = retrieval.retrieve_by_search("test")
         logger.success("Search results retrieved", indent=2)
@@ -99,7 +99,7 @@ def test_retrieval():
         logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test execution trace retrieval
-    logger.info("Test 4: Execution trace retrieval", icon="🧵", indent=1)
+    logger.info("Test 4: Execution trace retrieval", icon="[TRACE]", indent=1)
     try:
         context = retrieval.retrieve_execution_trace("test_component", max_depth=3)
         if context.get("error"):
@@ -118,7 +118,7 @@ def test_retrieval():
     except Exception as e:
         logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
-    logger.info("4. Testing retrieval stats...", icon="📊")
+    logger.info("4. Testing retrieval stats...", icon="[STATS]")
     try:
         stats = retrieval.get_retrieval_stats()
         logger.success("Retrieval stats retrieved", indent=1)
@@ -130,9 +130,9 @@ def test_retrieval():
 
         traceback.print_exc()
 
-    logger.success("RetrievalEngine test completed!", icon="✅")
+    logger.success("RetrievalEngine test completed!", icon="[OK]")
     logger.warning(
-        "Some tests may warn if the database is empty — initialize a repository for full coverage.",
+        "Some tests may warn if the database is empty -- initialize a repository for full coverage.",
         indent=0,
     )
 

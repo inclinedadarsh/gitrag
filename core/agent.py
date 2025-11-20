@@ -639,7 +639,7 @@ If you need specific code examples or architectural decisions, I can provide mor
     # ------------------------------------------------------------------ helpers
     def _dev_log(self, message: str, indent: int = 3):
         if self.logger and self.logger.is_dev:
-            self.logger.bullet(message, indent=indent, icon="▸")
+            self.logger.bullet(message, indent=indent, icon=">>")
 
     def _tool_event(
         self,

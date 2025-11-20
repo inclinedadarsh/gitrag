@@ -28,9 +28,9 @@ def test_classifier():
     try:
         llm_client = get_llm_client()
         classifier = QueryClassifier(llm_client)
-        print("   ✅ QueryClassifier initialized")
+        print("   [OK] QueryClassifier initialized")
     except Exception as e:
-        print(f"   ❌ Failed to initialize: {e}")
+        print(f"   [ERR] Failed to initialize: {e}")
         return
 
     # Test queries covering different types
@@ -61,12 +61,12 @@ def test_classifier():
 
             # Check if classification matches expected type
             if classification["type"] == expected_type:
-                print("      ✅ Classification correct")
+                print("      [OK] Classification correct")
             else:
-                print("      ⚠️  Classification differs from expected")
+                print("      [WARN]  Classification differs from expected")
 
         except Exception as e:
-            print(f"      ❌ Failed to classify: {e}")
+            print(f"      [ERR] Failed to classify: {e}")
             import traceback
 
             traceback.print_exc()
@@ -82,19 +82,19 @@ def test_classifier():
         }
 
         plan = classifier.get_retrieval_plan(sample_classification)
-        print("   ✅ Retrieval plan generated")
-        print(f"   📋 Steps: {len(plan['steps'])}")
+        print("   [OK] Retrieval plan generated")
+        print(f"   [LIST] Steps: {len(plan['steps'])}")
         for step in plan["steps"]:
             print(f"      - {step['action']}: {step['params']}")
-        print(f"   📊 Expected results: {plan['expected_results']}")
-        print(f"   🔄 Fallback: {plan['fallback_strategy']}")
+        print(f"   [STATS] Expected results: {plan['expected_results']}")
+        print(f"   [LOOP] Fallback: {plan['fallback_strategy']}")
     except Exception as e:
-        print(f"   ❌ Failed to generate retrieval plan: {e}")
+        print(f"   [ERR] Failed to generate retrieval plan: {e}")
         import traceback
 
         traceback.print_exc()
 
-    print("\n✅ QueryClassifier test completed successfully!")
+    print("\n[OK] QueryClassifier test completed successfully!")
     print("=" * 70)
 
 

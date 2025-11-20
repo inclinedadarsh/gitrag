@@ -53,26 +53,26 @@ class TUILogger:
         label = f"{icon} {title}" if icon else title
         self.console.rule(f"[bold {style}]{label}[/bold {style}]")
 
-    def info(self, message: str, icon: str = "•", style: str = "cyan", indent: int = 0):
+    def info(self, message: str, icon: str = "-", style: str = "cyan", indent: int = 0):
         self._line(message, icon=icon, style=style, indent=indent)
 
     def success(
-        self, message: str, icon: str = "✅", style: str = "green", indent: int = 0
+        self, message: str, icon: str = "[OK]", style: str = "green", indent: int = 0
     ):
         self._line(message, icon=icon, style=style, indent=indent)
 
     def warning(
-        self, message: str, icon: str = "⚠️", style: str = "yellow", indent: int = 0
+        self, message: str, icon: str = "[!]", style: str = "yellow", indent: int = 0
     ):
         self._line(message, icon=icon, style=style, indent=indent)
 
     def error(
-        self, message: str, icon: str = "❌", style: str = "red", indent: int = 0
+        self, message: str, icon: str = "[X]", style: str = "red", indent: int = 0
     ):
         self._line(message, icon=icon, style=style, indent=indent)
 
     def bullet(
-        self, message: str, icon: str = "→", style: str = "dim", indent: int = 1
+        self, message: str, icon: str = "->", style: str = "dim", indent: int = 1
     ):
         self._line(message, icon=icon, style=style, indent=indent)
 
@@ -141,7 +141,7 @@ class TUILogger:
         self.console.print(
             Panel(
                 "\n".join(body_lines),
-                title=f"Tool • {action}",
+                title=f"Tool - {action}",
                 border_style="magenta",
                 padding=(1, 2),
             )
