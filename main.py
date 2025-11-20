@@ -11,6 +11,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from core.db import create_db_and_tables, get_session
 from core import CodeUnderstandingPipeline
+from utils.tui_logger import TUILogger
 
 # Load environment variables from .env file if it exists
 load_dotenv()
@@ -35,63 +36,62 @@ def get_llm_client() -> OpenAI:
     )
 
 
-def print_banner():
-    """Print welcome banner."""
-    print("=" * 70)
-    print("  GitRAG - AI-Powered Code Understanding and Question Answering")
-    print("=" * 70)
-    print()
+def print_help(logger: TUILogger):
+    """Render command palette."""
+    commands = [
+        ("/help", "Show this help message"),
+        ("/reset", "Reset and initialize a new repository"),
+        ("/exit or /quit", "Exit the application"),
+    ]
+    logger.help(commands)
 
 
-def print_help():
-    """Print help message."""
-    print("\nCommands:")
-    print("  /help     - Show this help message")
-    print("  /reset    - Reset and initialize a new repository")
-    print("  /exit     - Exit the application")
-    print("  /quit     - Exit the application")
-    print("\nOr simply ask a question about the codebase!\n")
-
-
-def initialize_repository(pipeline: CodeUnderstandingPipeline, repo_url: str) -> bool:
+def initialize_repository(
+    pipeline: CodeUnderstandingPipeline, repo_url: str, logger: TUILogger
+) -> bool:
     """Initialize repository with the provided URL."""
     import time
 
-    print(f"\n🔄 Initializing repository: {repo_url}")
-    print("This may take a few minutes depending on repository size...\n")
+    logger.rule("Repository Initialization", icon="📦")
+    logger.info(f"Target repository: {repo_url}", icon="🔗")
+    logger.info(
+        "This may take a few minutes depending on the repository size...", icon="⏳"
+    )
 
     start_time = time.time()
 
     try:
-        result = pipeline.initialize_repository()
+        with logger.status("Parsing and summarizing repository..."):
+            result = pipeline.initialize_repository()
         elapsed_time = time.time() - start_time
 
-        # Display summary table
-        print("\n" + "=" * 70)
-        print("Initialization Complete!")
-        print("=" * 70)
-        print(f"\n{'Metric':<35} {'Count':<15}")
-        print("-" * 70)
-        print(f"{'Repository':<35} {result['repository_name']:<15}")
-        print(f"{'Files Processed':<35} {result['files_processed']:<15}")
-        print(f"{'Functions Processed':<35} {result.get('functions_processed', 0):<15}")
-        print(f"{'Classes Processed':<35} {result.get('classes_processed', 0):<15}")
-        print(f"{'Total Components':<35} {result['components_processed']:<15}")
-        print(f"{'Dependencies Stored':<35} {result['dependencies_stored']:<15}")
-        print(f"{'Time Taken':<35} {elapsed_time:.2f}s{'':<10}")
-        print("=" * 70)
-        print()
+        logger.success("Repository initialization complete!", icon="🎉")
+        logger.table(
+            "Initialization Summary",
+            [
+                ("Repository", result["repository_name"]),
+                ("Files Processed", result["files_processed"]),
+                ("Functions Processed", result.get("functions_processed", 0)),
+                ("Classes Processed", result.get("classes_processed", 0)),
+                ("Total Components", result["components_processed"]),
+                ("Dependencies Stored", result["dependencies_stored"]),
+                ("Time Taken", f"{elapsed_time:.2f}s"),
+            ],
+        )
 
         return True
 
     except Exception as e:
         elapsed_time = time.time() - start_time
-        print(f"\n❌ Error initializing repository (after {elapsed_time:.2f}s): {e}")
+        logger.error(
+            f"Error initializing repository after {elapsed_time:.2f}s: {e}",
+            icon="💥",
+        )
 
         # Check if it's a UNIQUE constraint error (database already has data)
         if "UNIQUE constraint" in str(e) or "IntegrityError" in str(type(e).__name__):
-            print("\n⚠️  Database already contains data for this repository.")
-            print("   Use /reset to clear the database and start fresh.")
+            logger.warning("Database already contains data for this repository.")
+            logger.bullet("Use /reset to clear the database and start fresh.", indent=2)
 
         import traceback
 
@@ -99,14 +99,14 @@ def initialize_repository(pipeline: CodeUnderstandingPipeline, repo_url: str) ->
         return False
 
 
-def process_query(pipeline: CodeUnderstandingPipeline, query: str) -> None:
+def process_query(
+    pipeline: CodeUnderstandingPipeline, query: str, logger: TUILogger
+) -> None:
     """Process a user query and display results."""
     import time
 
-    print("\n" + "=" * 70)
-    print("Processing Query")
-    print("=" * 70)
-    print(f"\n🔍 Query: {query}\n")
+    logger.rule("Processing Query", icon="🔍")
+    logger.panel("User Question", query, style="cyan")
 
     start_time = time.time()
 
@@ -114,64 +114,76 @@ def process_query(pipeline: CodeUnderstandingPipeline, query: str) -> None:
         response = pipeline.answer_user_query(query)
         elapsed_time = time.time() - start_time
 
-        print("\n" + "=" * 70)
-        print("Answer")
-        print("=" * 70)
-        print(f"\n{response['answer']}\n")
-        print("=" * 70)
+        logger.panel("Answer", response["answer"], style="green")
 
         # Show metadata in a clean format
-        print("\n📊 Query Details:")
-        print(f"   Classification: {response['classification']['type']}")
-        print(f"   Confidence: {response.get('confidence', 0.0):.2f}")
-        print(f"   Processing time: {elapsed_time:.2f}s")
-
-        if response.get("tools_used"):
-            print(f"   Tools used: {', '.join(response['tools_used'])}")
+        logger.table(
+            "Query Details",
+            [
+                ("Classification", response["classification"]["type"]),
+                ("Confidence", f"{response.get('confidence', 0.0):.2f}"),
+                ("Processing Time", f"{elapsed_time:.2f}s"),
+                (
+                    "Tools Used",
+                    ", ".join(response["tools_used"])
+                    if response.get("tools_used")
+                    else "—",
+                ),
+            ],
+        )
 
         if response.get("sources"):
-            print(f"\n📚 Sources ({len(response['sources'])} total):")
+            logger.info(f"Sources ({len(response['sources'])} total)", icon="📚")
             for i, source in enumerate(response["sources"][:5], 1):
-                print(f"   {i}. {source.target_id} ({source.level})")
+                logger.bullet(f"{i}. {source.target_id} ({source.level})", indent=2)
             if len(response["sources"]) > 5:
-                print(f"   ... and {len(response['sources']) - 5} more")
+                logger.bullet(
+                    f"... and {len(response['sources']) - 5} more",
+                    indent=2,
+                )
 
         if response.get("new_concepts_learned"):
-            print(
-                f"\n🧠 New concepts learned: {', '.join(response['new_concepts_learned'])}"
+            logger.info(
+                f"New concepts learned: {', '.join(response['new_concepts_learned'])}",
+                icon="🧠",
             )
-
-        print()
 
     except Exception as e:
         elapsed_time = time.time() - start_time
-        print(f"\n❌ Error processing query (after {elapsed_time:.2f}s): {e}")
+        logger.error(
+            f"Error processing query after {elapsed_time:.2f}s: {e}",
+            icon="💥",
+        )
         import traceback
 
         traceback.print_exc()
-        print()
 
 
 def main():
     """Main application loop."""
-    print_banner()
+    mode = os.getenv("MODE", "production").strip().lower()
+    logger = TUILogger(mode=mode)
+
+    logger.show_logo()
+    logger.rule("GitRAG • Terminal Knowledge Workbench", icon="🧠")
+    logger.info(f"MODE={mode}", icon="⚙️")
 
     # Setup database
-    print("🔧 Setting up database...")
+    logger.info("Setting up database...", icon="🗄️")
     try:
         create_db_and_tables()
-        print("✅ Database initialized")
+        logger.success("Database initialized")
     except Exception as e:
-        print(f"❌ Database setup failed: {e}")
+        logger.error(f"Database setup failed: {e}")
         sys.exit(1)
 
     # Initialize LLM client
-    print("🔧 Initializing LLM client...")
+    logger.info("Initializing LLM client...", icon="🤖")
     try:
         llm_client = get_llm_client()
-        print("✅ LLM client initialized")
+        logger.success("LLM client initialized")
     except Exception as e:
-        print(f"❌ LLM client initialization failed: {e}")
+        logger.error(f"LLM client initialization failed: {e}")
         sys.exit(1)
 
     # Get database session
@@ -180,8 +192,8 @@ def main():
     # Initialize pipeline (will be set up with repo later)
     pipeline: Optional[CodeUnderstandingPipeline] = None
 
-    print("\n✅ Setup complete!\n")
-    print_help()
+    logger.success("Setup complete! Ready to initialize a repository.", icon="🚀")
+    print_help(logger)
 
     # Main loop
     initialized = False
@@ -190,19 +202,23 @@ def main():
         try:
             if not initialized:
                 # Need to initialize repository first
-                print("\n" + "=" * 70)
-                print("Repository Initialization")
-                print("=" * 70)
-                print("\nEnter a GitHub repository URL to analyze:")
-                print("(Example: https://github.com/username/repository)")
+                logger.rule("Repository Initialization Required", icon="📦")
+                logger.bullet(
+                    "Enter a GitHub repository URL to analyze.",
+                    indent=0,
+                    icon="💡",
+                )
+                logger.bullet(
+                    "Example: https://github.com/username/repository", indent=1
+                )
 
                 repo_url = input("\nRepository URL (or /help for commands): ").strip()
 
                 if repo_url in ["/help", "/h"]:
-                    print_help()
+                    print_help(logger)
                     continue
                 elif repo_url in ["/exit", "/quit", "/q"]:
-                    print("\n👋 Goodbye!")
+                    logger.info("Goodbye!", icon="👋")
                     break
                 elif not repo_url:
                     continue
@@ -210,7 +226,7 @@ def main():
                 if not (
                     repo_url.startswith("http://") or repo_url.startswith("https://")
                 ):
-                    print("❌ Invalid URL. Please provide a full GitHub URL.")
+                    logger.error("Invalid URL. Please provide a full GitHub URL.")
                     continue
 
                 # Initialize pipeline with repository
@@ -218,15 +234,16 @@ def main():
                     repo_path=repo_url,
                     llm_client=llm_client,
                     db_session=session,
+                    logger=logger,
                 )
 
-                if initialize_repository(pipeline, repo_url):
+                if initialize_repository(pipeline, repo_url, logger):
                     initialized = True
-                    print("\n" + "=" * 70)
-                    print("Ready for Questions!")
-                    print("=" * 70)
-                    print("\n💡 You can now ask questions about the codebase!")
-                    print("   Type /help for commands or /exit to quit.\n")
+                    logger.rule("Ready for Questions!", icon="✨")
+                    logger.info(
+                        "You can now ask questions about the codebase!", icon="💬"
+                    )
+                    logger.bullet("Type /help for commands or /exit to quit.", indent=1)
                 else:
                     pipeline = None
                     continue
@@ -238,10 +255,10 @@ def main():
                     continue
 
                 if query in ["/help", "/h"]:
-                    print_help()
+                    print_help(logger)
                     continue
                 elif query in ["/reset", "/r"]:
-                    print("\n🔄 Resetting database...")
+                    logger.info("Resetting database...", icon="🔄")
                     try:
                         # Clear all data from database
                         from models import Summary, Dependency, CodeMapping
@@ -266,31 +283,34 @@ def main():
 
                         pipeline = None
                         initialized = False
-                        print(
-                            "✅ Database cleared. Please initialize a new repository.\n"
+                        logger.success(
+                            "Database cleared. Please initialize a new repository."
                         )
                     except Exception as e:
-                        print(f"❌ Error resetting database: {e}")
-                        print("   You may need to delete database.db manually.\n")
+                        logger.error(f"Error resetting database: {e}")
+                        logger.bullet(
+                            "You may need to delete database.db manually.",
+                            indent=1,
+                            icon="💡",
+                        )
                     continue
                 elif query in ["/exit", "/quit", "/q"]:
-                    print("\n👋 Goodbye!")
+                    logger.info("Goodbye!", icon="👋")
                     break
                 else:
-                    process_query(pipeline, query)
+                    process_query(pipeline, query, logger)
 
         except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
+            logger.info("Exiting. Goodbye!", icon="👋")
             break
         except EOFError:
-            print("\n\n👋 Goodbye!")
+            logger.info("Exiting. Goodbye!", icon="👋")
             break
         except Exception as e:
-            print(f"\n❌ Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             import traceback
 
             traceback.print_exc()
-            print()
 
     # Cleanup
     if session:

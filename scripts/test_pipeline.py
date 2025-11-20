@@ -9,6 +9,7 @@ import time
 from openai import OpenAI
 from app.db import create_db_and_tables, get_session
 from core import CodeUnderstandingPipeline
+from utils.tui_logger import TUILogger
 
 
 def get_llm_client():
@@ -22,66 +23,74 @@ def get_llm_client():
 
 def test_pipeline():
     """Test the full CodeUnderstandingPipeline."""
-    print("=" * 70)
-    print("Testing CodeUnderstandingPipeline")
-    print("=" * 70)
+    mode = os.getenv("MODE", "production")
+    logger = TUILogger(mode=mode)
+    logger.show_logo()
+    logger.rule("Testing CodeUnderstandingPipeline", icon="🧪")
 
-    print("\n1. Setting up database...")
+    logger.info("1. Setting up database...", icon="🗄️")
     try:
         create_db_and_tables()
         session = get_session()
-        print("   ✅ Database setup complete")
+        logger.success("Database setup complete", indent=1)
     except Exception as e:
-        print(f"   ❌ Database setup failed: {e}")
+        logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    print("\n2. Initializing LLM client...")
+    logger.info("2. Initializing LLM client...", icon="🤖")
     try:
         llm_client = get_llm_client()
-        print("   ✅ LLM client initialized")
+        logger.success("LLM client initialized", indent=1)
     except Exception as e:
-        print(f"   ❌ LLM client initialization failed: {e}")
+        logger.error(f"LLM client initialization failed: {e}", indent=1)
         return
 
-    print("\n3. Initializing pipeline...")
+    logger.info("3. Initializing pipeline...", icon="⚙️")
     repo_url = "https://github.com/inclinedadarsh/inclinet"
-    print(f"   📦 Repository: {repo_url}")
+    logger.bullet(f"Repository: {repo_url}", indent=1)
 
     try:
         pipeline = CodeUnderstandingPipeline(
             repo_path=repo_url,
             llm_client=llm_client,
             db_session=session,
+            logger=logger,
         )
-        print("   ✅ Pipeline initialized")
+        logger.success("Pipeline initialized", indent=1)
     except Exception as e:
-        print(f"   ❌ Pipeline initialization failed: {e}")
+        logger.error(f"Pipeline initialization failed: {e}", indent=1)
         return
 
-    print("\n4. Testing repository initialization...")
-    print("-" * 70)
-    print("   ⚠️  This may take several minutes depending on repository size...")
+    logger.rule("4. Testing repository initialization...", icon="📦")
+    logger.warning(
+        "This may take several minutes depending on repository size...",
+        indent=1,
+    )
 
     start_time = time.time()
     try:
         result = pipeline.initialize_repository()
         elapsed = time.time() - start_time
 
-        print("\n   ✅ Repository initialized successfully!")
-        print(f"   ⏱️  Time taken: {elapsed:.2f} seconds")
-        print(f"   📄 Files processed: {result['files_processed']}")
-        print(f"   🔧 Components processed: {result['components_processed']}")
-        print(f"   🔗 Dependencies stored: {result['dependencies_stored']}")
-        print(f"   📦 Repository: {result['repository_name']}")
+        logger.success("Repository initialized successfully!", indent=1)
+        logger.table(
+            "Initialization Metrics",
+            [
+                ("Time taken", f"{elapsed:.2f} seconds"),
+                ("Files processed", result["files_processed"]),
+                ("Components processed", result["components_processed"]),
+                ("Dependencies stored", result["dependencies_stored"]),
+                ("Repository", result["repository_name"]),
+            ],
+        )
     except Exception as e:
-        print(f"   ❌ Repository initialization failed: {e}")
+        logger.error(f"Repository initialization failed: {e}", indent=1)
         import traceback
 
         traceback.print_exc()
         return
 
-    print("\n5. Testing query answering...")
-    print("-" * 70)
+    logger.rule("5. Testing query answering...", icon="💬")
 
     test_queries = [
         "What does this project do?",
@@ -90,47 +99,51 @@ def test_pipeline():
     ]
 
     for i, query in enumerate(test_queries, 1):
-        print(f"\n   Query {i}: {query}")
-        print("   " + "-" * 60)
+        logger.info(f"Query {i}: {query}", icon="❓", indent=1)
 
         start_time = time.time()
         try:
             response = pipeline.answer_user_query(query)
             elapsed = time.time() - start_time
 
-            print(f"   ✅ Query processed in {elapsed:.2f} seconds")
-            print(f"   🎯 Classification: {response['classification']['type']}")
-            print(f"   📊 Confidence: {response['confidence']:.2f}")
-            print(f"   🔧 Tools used: {response['tools_used']}")
+            logger.success(f"Query processed in {elapsed:.2f} seconds", indent=2)
+            logger.bullet(
+                f"Classification: {response['classification']['type']}", indent=3
+            )
+            logger.bullet(f"Confidence: {response['confidence']:.2f}", indent=3)
+            logger.bullet(f"Tools used: {response['tools_used']}", indent=3)
 
             if response.get("sources"):
-                print(f"   📚 Sources: {len(response['sources'])}")
+                logger.bullet(f"Sources: {len(response['sources'])}", indent=3)
 
             if response.get("new_concepts_learned"):
-                print(
-                    f"   🧠 New concepts: {', '.join(response['new_concepts_learned'])}"
+                logger.bullet(
+                    f"New concepts: {', '.join(response['new_concepts_learned'])}",
+                    indent=3,
                 )
 
-            print("\n   💬 Answer (first 200 chars):")
-            print(f"   {response['answer'][:200]}...")
+            logger.panel(
+                "Answer (first 200 chars)",
+                f"{response['answer'][:200]}...",
+                style="green",
+            )
 
         except Exception as e:
-            print(f"   ❌ Query processing failed: {e}")
+            logger.error(f"Query processing failed: {e}", indent=2)
             import traceback
 
             traceback.print_exc()
 
-    print("\n6. Testing pipeline statistics...")
+    logger.info("6. Testing pipeline statistics...", icon="📊")
     try:
         stats = pipeline.get_pipeline_stats()
-        print("   ✅ Pipeline stats retrieved")
+        logger.success("Pipeline stats retrieved", indent=1)
         for key, value in stats.items():
-            print(f"   📊 {key}: {value}")
+            logger.bullet(f"{key}: {value}", indent=2)
     except Exception as e:
-        print(f"   ❌ Failed to get stats: {e}")
+        logger.error(f"Failed to get stats: {e}", indent=1)
 
-    print("\n✅ CodeUnderstandingPipeline test completed successfully!")
-    print("=" * 70)
+    logger.success("CodeUnderstandingPipeline test completed successfully!", icon="✅")
 
 
 if __name__ == "__main__":

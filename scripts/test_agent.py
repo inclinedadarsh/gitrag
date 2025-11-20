@@ -9,6 +9,7 @@ from openai import OpenAI
 from core.agent import LLMAgent
 from core.db_manager import DatabaseManager
 from app.db import create_db_and_tables, get_session
+from utils.tui_logger import TUILogger
 
 
 def get_llm_client():
@@ -22,63 +23,64 @@ def get_llm_client():
 
 def test_agent():
     """Test LLMAgent with sample queries."""
-    print("=" * 70)
-    print("Testing LLMAgent")
-    print("=" * 70)
+    mode = os.getenv("MODE", "production")
+    logger = TUILogger(mode=mode)
+    logger.show_logo()
+    logger.rule("Testing LLMAgent", icon="🧪")
 
-    print("\n1. Setting up database...")
+    logger.info("1. Setting up database...", icon="🗄️")
     try:
         create_db_and_tables()
         session = get_session()
         db_manager = DatabaseManager(session)
-        print("   ✅ Database setup complete")
+        logger.success("Database setup complete", indent=1)
     except Exception as e:
-        print(f"   ❌ Database setup failed: {e}")
+        logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    print("\n2. Initializing LLMAgent...")
+    logger.info("2. Initializing LLMAgent...", icon="🤖")
     try:
         llm_client = get_llm_client()
-        agent = LLMAgent(llm_client, db_manager, max_iterations=3)
-        print("   ✅ LLMAgent initialized")
-        print(f"   🔧 Available tools: {list(agent.tools.keys())}")
+        agent = LLMAgent(llm_client, db_manager, max_iterations=3, logger=logger)
+        logger.success("LLMAgent initialized", indent=1)
+        logger.bullet(f"Available tools: {list(agent.tools.keys())}", indent=2)
     except Exception as e:
-        print(f"   ❌ Failed to initialize: {e}")
+        logger.error(f"Failed to initialize: {e}", indent=1)
         return
 
-    print("\n3. Testing tool execution...")
-    print("-" * 70)
+    logger.rule("3. Testing tool execution", icon="🧰")
 
     # Test search_components tool
-    print("\n   Test 1: search_components tool")
+    logger.info("Test 1: search_components tool", icon="🔍", indent=1)
     try:
         result = agent.execute_tool(
             "search_components", {"keyword": "test", "limit": 5}
         )
         if result.get("error"):
-            print(f"      ⚠️  Tool error (expected if DB is empty): {result['error']}")
+            logger.warning(
+                f"Tool error (expected if DB is empty): {result['error']}", indent=2
+            )
         else:
-            print("      ✅ Tool executed successfully")
-            print(f"      📊 Results: {len(result.get('result', []))}")
-            print(f"      📈 Tokens: {result.get('token_count', 0)}")
+            logger.success("Tool executed successfully", indent=2)
+            logger.bullet(f"Results: {len(result.get('result', []))}", indent=3)
+            logger.bullet(f"Tokens: {result.get('token_count', 0)}", indent=3)
     except Exception as e:
-        print(f"      ⚠️  Error (may be expected if DB is empty): {e}")
+        logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test get_dependency_graph tool
-    print("\n   Test 2: get_dependency_graph tool")
+    logger.info("Test 2: get_dependency_graph tool", icon="🔗", indent=1)
     try:
         result = agent.execute_tool("get_dependency_graph", {})
         if result.get("error"):
-            print(f"      ⚠️  Tool error: {result['error']}")
+            logger.warning(f"Tool error: {result['error']}", indent=2)
         else:
-            print("      ✅ Tool executed successfully")
+            logger.success("Tool executed successfully", indent=2)
             graph = result.get("result", {})
-            print(f"      📊 Graph nodes: {len(graph)}")
+            logger.bullet(f"Graph nodes: {len(graph)}", indent=3)
     except Exception as e:
-        print(f"      ⚠️  Error: {e}")
+        logger.warning(f"Error: {e}", indent=2)
 
-    print("\n4. Testing decision making...")
-    print("-" * 70)
+    logger.rule("4. Testing decision making", icon="🧠")
 
     test_query = "What does this project do?"
     initial_context = {
@@ -88,32 +90,41 @@ def test_agent():
     }
     user_knowledge = {"expertise_level": "intermediate", "concepts_learned": []}
 
-    print(f"\n   Query: {test_query}")
+    logger.info(f"Query: {test_query}", icon="💬", indent=1)
     try:
         decision = agent.decide_next_action(
             test_query, initial_context, user_knowledge, 0
         )
-        print("      ✅ Decision made")
-        print(f"      🎯 Action: {decision.get('action')}")
-        print(f"      💭 Reasoning: {decision.get('reasoning', 'N/A')}")
-        print(f"      📊 Confidence: {decision.get('confidence', 0.0)}")
+        logger.success("Decision made", indent=2)
+        logger.bullet(f"Action: {decision.get('action')}", indent=3)
+        logger.bullet(f"Reasoning: {decision.get('reasoning', 'N/A')}", indent=3)
+        logger.bullet(f"Confidence: {decision.get('confidence', 0.0)}", indent=3)
         if decision.get("tool_name"):
-            print(f"      🔧 Tool: {decision['tool_name']}")
+            logger.bullet(f"Tool: {decision['tool_name']}", indent=3)
     except Exception as e:
-        print(f"      ❌ Failed to make decision: {e}")
+        logger.error(f"Failed to make decision: {e}", indent=2)
         import traceback
 
         traceback.print_exc()
 
-    print("\n5. Testing full query answering (requires initialized repository)...")
-    print("-" * 70)
-    print("   ⚠️  This test requires a repository to be initialized first.")
-    print("   ⚠️  Run the main application or test_pipeline.py to initialize.")
+    logger.rule(
+        "5. Testing full query answering (requires initialized repository)",
+        icon="ℹ️",
+    )
+    logger.warning(
+        "This test requires a repository to be initialized first.",
+        indent=1,
+    )
+    logger.warning(
+        "Run the main application or test_pipeline.py to initialize.",
+        indent=1,
+    )
 
-    print("\n✅ LLMAgent test completed!")
-    print("=" * 70)
-    print("Note: Some tests may show warnings if the database is empty.")
-    print("      This is expected. Initialize a repository first for full testing.")
+    logger.success("LLMAgent test completed!", icon="✅")
+    logger.warning(
+        "Some tests may warn if the database is empty — initialize a repository for full coverage.",
+        indent=0,
+    )
 
 
 if __name__ == "__main__":

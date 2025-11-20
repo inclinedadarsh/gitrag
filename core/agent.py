@@ -3,9 +3,10 @@ Reasoning agent that navigates code context and answers queries.
 """
 
 import json
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 from core.db_manager import DatabaseManager
 from utils.constants import SYSTEM_SUMMARY_MESSAGE
+from utils.tui_logger import TUILogger
 
 
 class LLMAgent:
@@ -20,12 +21,17 @@ class LLMAgent:
     """
 
     def __init__(
-        self, llm_client, db_manager: DatabaseManager, max_iterations: int = 5
+        self,
+        llm_client,
+        db_manager: DatabaseManager,
+        max_iterations: int = 5,
+        logger: Optional[TUILogger] = None,
     ) -> None:
         """Initialize agent with tools"""
         self.llm = llm_client
         self.db_manager = db_manager
         self.max_iterations = max_iterations
+        self.logger = logger or TUILogger()
 
         # Available tools
         self.tools = {
@@ -69,63 +75,78 @@ class LLMAgent:
 
         # Start reasoning loop
         for iteration in range(self.max_iterations):
-            print(f"    🔄 Iteration {iteration + 1}/{self.max_iterations}")
+            self._dev_log(f"Iteration {iteration + 1}/{self.max_iterations}")
 
             # Decide next action
-            print("      🤔 Deciding next action...")
+            self._dev_log("Deciding next action...", indent=4)
             decision = self.decide_next_action(
                 user_query, current_context, user_knowledge, iteration
             )
-            print(f"      → Action: {decision['action']}")
+            self._dev_log(f"Action: {decision['action']}", indent=4)
             if decision.get("reasoning"):
-                print(f"      → Reasoning: {decision['reasoning']}")
+                self._dev_log(f"Reasoning: {decision['reasoning']}", indent=4)
 
             if decision["action"] == "answer":
-                print("      ✅ Agent decided to answer with current context")
+                self._dev_log("Agent decided to answer with current context", indent=4)
                 break
 
             # Execute tool
             tool_name = decision["tool_name"]
             parameters = decision["parameters"]
-            print(f"      🔧 Executing tool: {tool_name} with params: {parameters}")
+            self._dev_log(
+                f"Executing tool: {tool_name} with params: {parameters}", indent=4
+            )
 
             try:
                 tool_result = self.execute_tool(tool_name, parameters)
                 tools_used.append(tool_name)
 
-                if "error" in tool_result:
-                    print(f"      ❌ Tool error: {tool_result['error']}")
+                status = "error" if "error" in tool_result else "success"
+                if status == "error":
+                    self._dev_log(f"Tool error: {tool_result['error']}", indent=4)
                 else:
-                    print("      ✅ Tool executed successfully")
+                    self._dev_log("Tool executed successfully", indent=4)
                     if "token_count" in tool_result:
-                        print(f"      → Tokens retrieved: {tool_result['token_count']}")
+                        self._dev_log(
+                            f"Tokens retrieved: {tool_result['token_count']}", indent=4
+                        )
 
                 # Add tool result to context
                 if "sources" in tool_result:
                     all_sources.extend(tool_result["sources"])
-                    print(f"      → Sources added: {len(tool_result['sources'])}")
+                    self._dev_log(
+                        f"Sources added: {len(tool_result['sources'])}", indent=4
+                    )
 
                 # Merge tool result into current context
                 current_context = self._merge_context(current_context, tool_result)
+                self._tool_event(
+                    tool_name,
+                    status,
+                    parameters,
+                    tool_result,
+                    error=tool_result.get("error"),
+                )
 
             except Exception as e:
-                print(f"      ❌ Tool execution failed: {e}")
+                self._tool_event(tool_name, "error", parameters, error=str(e))
+                self._dev_log(f"Tool execution failed: {e}", indent=4)
                 continue
 
         # Generate final answer
-        print("    📝 Generating final answer...")
+        self._dev_log("Generating final answer...")
         answer = self._generate_final_answer(
             user_query, current_context, user_knowledge
         )
-        print(f"    ✅ Answer generated ({len(answer)} characters)")
+        self._dev_log(f"Answer generated ({len(answer)} characters)")
 
         # Identify learned concepts
-        print("    🧠 Identifying learned concepts...")
+        self._dev_log("Identifying learned concepts...")
         new_concepts = self._identify_learned_concepts(user_query, answer)
         if new_concepts:
-            print(f"    → New concepts: {new_concepts}")
+            self._dev_log(f"New concepts: {new_concepts}")
         else:
-            print("    → No new concepts identified")
+            self._dev_log("No new concepts identified")
 
         return {
             "answer": answer,
@@ -386,7 +407,8 @@ If you think we have enough context to answer, set action to "answer".
                         file_paths.append(f"/repos/inclinet/{filepath}")
                         sources.append(result)
         except Exception as e:
-            print(f"      Warning: Keyword search failed: {e}")
+            if self.logger:
+                self.logger.warning(f"Keyword search failed: {e}")
 
         # Remove duplicates
         file_paths = list(set(file_paths))
@@ -613,3 +635,35 @@ If you need specific code examples or architectural decisions, I can provide mor
             adapted = explanation
 
         return adapted
+
+    # ------------------------------------------------------------------ helpers
+    def _dev_log(self, message: str, indent: int = 3):
+        if self.logger and self.logger.is_dev:
+            self.logger.bullet(message, indent=indent, icon="▸")
+
+    def _tool_event(
+        self,
+        name: str,
+        status: str,
+        params: Dict[str, Any],
+        result: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
+    ):
+        if not self.logger:
+            return
+        preview = None
+        if result:
+            preview = {
+                "token_count": result.get("token_count"),
+                "sources": len(result.get("sources", []))
+                if result.get("sources")
+                else 0,
+                "keys": list(result.keys()),
+            }
+        self.logger.tool_event(
+            name,
+            status=status,
+            params=params,
+            result_preview=preview,
+            error=error,
+        )

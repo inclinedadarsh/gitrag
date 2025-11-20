@@ -9,6 +9,7 @@ from openai import OpenAI
 from core.retrieval import RetrievalEngine
 from core.db_manager import DatabaseManager
 from app.db import create_db_and_tables, get_session
+from utils.tui_logger import TUILogger
 
 
 def get_llm_client():
@@ -22,112 +23,118 @@ def get_llm_client():
 
 def test_retrieval():
     """Test RetrievalEngine with different retrieval strategies."""
-    print("=" * 70)
-    print("Testing RetrievalEngine")
-    print("=" * 70)
+    mode = os.getenv("MODE", "production")
+    logger = TUILogger(mode=mode)
+    logger.show_logo()
+    logger.rule("Testing RetrievalEngine", icon="🧪")
 
-    print("\n1. Setting up database...")
+    logger.info("1. Setting up database...", icon="🗄️")
     try:
         create_db_and_tables()
         session = get_session()
         db_manager = DatabaseManager(session)
-        print("   ✅ Database setup complete")
+        logger.success("Database setup complete", indent=1)
     except Exception as e:
-        print(f"   ❌ Database setup failed: {e}")
+        logger.error(f"Database setup failed: {e}", indent=1)
         return
 
-    print("\n2. Initializing RetrievalEngine...")
+    logger.info("2. Initializing RetrievalEngine...", icon="⚙️")
     try:
         retrieval = RetrievalEngine(db_manager)
-        print("   ✅ RetrievalEngine initialized")
+        logger.success("RetrievalEngine initialized", indent=1)
     except Exception as e:
-        print(f"   ❌ Failed to initialize: {e}")
+        logger.error(f"Failed to initialize: {e}", indent=1)
         return
 
-    print("\n3. Testing retrieval strategies...")
-    print("-" * 70)
+    logger.rule("3. Testing retrieval strategies", icon="🧪")
 
     # Test repository overview retrieval
-    print("\n   Test 1: Repository overview retrieval")
+    logger.info("Test 1: Repository overview retrieval", icon="📦", indent=1)
     try:
         context = retrieval.retrieve_repository_overview()
-        print("      ✅ Context retrieved")
-        print(f"      📊 Entry point: {context.get('entry_point')}")
-        print(f"      📈 Token count: {context.get('token_count', 0)}")
+        logger.success("Context retrieved", indent=2)
+        logger.bullet(f"Entry point: {context.get('entry_point')}", indent=3)
+        logger.bullet(f"Token count: {context.get('token_count', 0)}", indent=3)
         if context.get("repo_summary"):
-            print(
-                f"      📝 Repository summary: {context['repo_summary'].text[:100]}..."
+            logger.bullet(
+                f"Repository summary sample: {context['repo_summary'].text[:100]}...",
+                indent=3,
             )
         if context.get("file_summaries"):
-            print(f"      📄 File summaries: {len(context['file_summaries'])}")
+            logger.bullet(f"File summaries: {len(context['file_summaries'])}", indent=3)
     except Exception as e:
-        print(f"      ❌ Failed: {e}")
+        logger.error(f"Failed: {e}", indent=2)
         import traceback
 
         traceback.print_exc()
 
     # Test component context retrieval
-    print("\n   Test 2: Component context retrieval")
+    logger.info("Test 2: Component context retrieval", icon="🧩", indent=1)
     try:
         # This will fail if no components exist, which is expected
         context = retrieval.retrieve_component_context("test_component")
         if context.get("error"):
-            print(
-                f"      ⚠️  Component not found (expected if DB is empty): {context['error']}"
+            logger.warning(
+                f"Component not found (expected if DB is empty): {context['error']}",
+                indent=2,
             )
         else:
-            print("      ✅ Component context retrieved")
-            print(f"      📊 Entry point: {context.get('entry_point')}")
-            print(f"      📈 Token count: {context.get('token_count', 0)}")
+            logger.success("Component context retrieved", indent=2)
+            logger.bullet(f"Entry point: {context.get('entry_point')}", indent=3)
+            logger.bullet(f"Token count: {context.get('token_count', 0)}", indent=3)
     except Exception as e:
-        print(f"      ⚠️  Error (may be expected if DB is empty): {e}")
+        logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test search retrieval
-    print("\n   Test 3: Search retrieval")
+    logger.info("Test 3: Search retrieval", icon="🔍", indent=1)
     try:
         context = retrieval.retrieve_by_search("test")
-        print("      ✅ Search results retrieved")
-        print(f"      📊 Entry point: {context.get('entry_point')}")
-        print(f"      📈 Token count: {context.get('token_count', 0)}")
-        print(f"      🔍 Total matches: {context.get('total_matches', 0)}")
+        logger.success("Search results retrieved", indent=2)
+        logger.bullet(f"Entry point: {context.get('entry_point')}", indent=3)
+        logger.bullet(f"Token count: {context.get('token_count', 0)}", indent=3)
+        logger.bullet(f"Total matches: {context.get('total_matches', 0)}", indent=3)
         if context.get("search_results"):
-            print(f"      📋 Results: {len(context['search_results'])}")
+            logger.bullet(f"Results: {len(context['search_results'])}", indent=3)
     except Exception as e:
-        print(f"      ⚠️  Error (may be expected if DB is empty): {e}")
+        logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
     # Test execution trace retrieval
-    print("\n   Test 4: Execution trace retrieval")
+    logger.info("Test 4: Execution trace retrieval", icon="🧵", indent=1)
     try:
         context = retrieval.retrieve_execution_trace("test_component", max_depth=3)
         if context.get("error"):
-            print(
-                f"      ⚠️  Component not found (expected if DB is empty): {context['error']}"
+            logger.warning(
+                f"Component not found (expected if DB is empty): {context['error']}",
+                indent=2,
             )
         else:
-            print("      ✅ Execution trace retrieved")
-            print(f"      📊 Entry point: {context.get('entry_point')}")
-            print(f"      📈 Token count: {context.get('token_count', 0)}")
+            logger.success("Execution trace retrieved", indent=2)
+            logger.bullet(f"Entry point: {context.get('entry_point')}", indent=3)
+            logger.bullet(f"Token count: {context.get('token_count', 0)}", indent=3)
             if context.get("execution_path"):
-                print(f"      🔗 Path length: {len(context['execution_path'])}")
+                logger.bullet(
+                    f"Path length: {len(context['execution_path'])}", indent=3
+                )
     except Exception as e:
-        print(f"      ⚠️  Error (may be expected if DB is empty): {e}")
+        logger.warning(f"Error (may be expected if DB is empty): {e}", indent=2)
 
-    print("\n4. Testing retrieval stats...")
+    logger.info("4. Testing retrieval stats...", icon="📊")
     try:
         stats = retrieval.get_retrieval_stats()
-        print("   ✅ Retrieval stats retrieved")
+        logger.success("Retrieval stats retrieved", indent=1)
         for key, value in stats.items():
-            print(f"      {key}: {value}")
+            logger.bullet(f"{key}: {value}", indent=2)
     except Exception as e:
-        print(f"   ❌ Failed to get stats: {e}")
+        logger.error(f"Failed to get stats: {e}", indent=1)
         import traceback
 
         traceback.print_exc()
 
-    print("\n✅ RetrievalEngine test completed!")
-    print("=" * 70)
-    print("Note: Some tests may show warnings if the database is empty.")
-    print("      This is expected. Initialize a repository first for full testing.")
+    logger.success("RetrievalEngine test completed!", icon="✅")
+    logger.warning(
+        "Some tests may warn if the database is empty — initialize a repository for full coverage.",
+        indent=0,
+    )
 
 
 if __name__ == "__main__":
