@@ -21,7 +21,7 @@ GitRAG is an AI-powered code understanding and question answering system. It ana
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/inclinedadarsh/gitrag.git
 cd gitrag
 ```
 
@@ -30,10 +30,11 @@ cd gitrag
 uv sync
 ```
 
-3. Set up environment variables (optional):
+3. Set up environment variables:
 ```bash
 export OPENROUTER_API_KEY="your-api-key-here"
 export DATABASE_URL="sqlite:///./database.db"  # Optional, defaults to this
+export MODE="production" # Optional, defaults to "production" or "dev" for detailed logging
 ```
 
 ## Usage
@@ -69,29 +70,6 @@ Once the application starts:
    - `/help` - Show help message
    - `/reset` - Reset and initialize a new repository
    - `/exit` or `/quit` - Exit the application
-
-### Example Session
-
-```
-$ python main.py
-
-======================================================================
-  GitRAG - AI-Powered Code Understanding and Question Answering
-======================================================================
-
-Enter repository URL: https://github.com/username/repo
-
-[LOOP] Initializing repository...
-[OK] Repository initialized successfully!
-  - Files processed: 45
-  - Components processed: 120
-  - Dependencies stored: 89
-
-[ASK] Ask a question: What does this project do?
-
-[SEARCH] Processing Query...
-[ASK] Answer: This project is a neural network library that provides...
-```
 
 ## Testing
 
@@ -222,7 +200,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Add your license here]
+[MIT License](LICENSE)
 
 ## Acknowledgments
 
