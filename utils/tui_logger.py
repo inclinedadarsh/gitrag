@@ -77,7 +77,12 @@ class TUILogger:
         self._line(message, icon=icon, style=style, indent=indent)
 
     def panel(self, title: str, body: str, style: str = "cyan"):
-        self.console.print(Panel(body, title=title, border_style=style, padding=(1, 2)))
+        # Convert body to Text to enable proper wrapping within the panel
+        # Text objects automatically wrap based on the console width
+        text_body = Text(str(body)) if body else Text("")
+        self.console.print(
+            Panel(text_body, title=title, border_style=style, padding=(1, 2))
+        )
 
     def table(
         self,
